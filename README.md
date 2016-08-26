@@ -18,7 +18,14 @@ This is a slightly larger modification which produces two docker images as the
 final output.
 
 * Base image which includes only runtime dependencies
-* Named as `origin/pkg_deps_<hash>` where hash is a hash computed from the names of the runtime deps
+* Named as `origin/pkg_deps:<hash>` where hash is computed from the names (idents) of the runtime deps
 * "Runtime" image which installs the final package and uses previous image as the base
 
-This gives much better reuse of layers and totally avoids re-building the base at all.
+This gives much better reuse of layers and totally avoids re-building the base at all. Final images:
+
+```
+REPOSITORY                                  TAG                    IMAGE ID            CREATED             SIZE
+chetan/foobar                               0.1.0-20160826183423   6c1ed4b01e6b        16 seconds ago      177.8 MB
+chetan/foobar                               latest                 6c1ed4b01e6b        16 seconds ago      177.8 MB
+chetan/foobar_base                          dadf80f42a2a2028       09103ddfb5b0        18 seconds ago      159.8 MB
+```
