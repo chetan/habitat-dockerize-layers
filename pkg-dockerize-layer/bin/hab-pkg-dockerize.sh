@@ -206,6 +206,10 @@ docker_image() {
 FROM ${DOCKER_BASE_TAG}
 COPY ${pkg_file} /tmp/
 RUN hab pkg install /tmp/${pkg_file} && rm -f /tmp/${pkg_file}
+
+RUN mkdir -p $HAB_ROOT_PATH/svc/${pkg_name}/data \
+             $HAB_ROOT_PATH/svc/${pkg_name}/config \
+      && chown -R 42:42 $HAB_ROOT_PATH/svc/${pkg_name}
 VOLUME $HAB_ROOT_PATH/svc/${pkg_name}/data $HAB_ROOT_PATH/svc/${pkg_name}/config
 EXPOSE 9631 $(package_exposes $1)
 ENTRYPOINT ["/init.sh"]
