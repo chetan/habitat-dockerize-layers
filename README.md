@@ -25,7 +25,8 @@ This gives much better reuse of layers and totally avoids re-building the base a
 
 ```
 REPOSITORY                                  TAG                    IMAGE ID            CREATED             SIZE
-chetan/foobar                               0.1.0-20160826183423   6c1ed4b01e6b        16 seconds ago      177.8 MB
-chetan/foobar                               latest                 6c1ed4b01e6b        16 seconds ago      177.8 MB
-chetan/foobar_base                          dadf80f42a2a2028       09103ddfb5b0        18 seconds ago      159.8 MB
+chetan/foobar                               0.1.0-20160826204445   c3b2ed108437        5 seconds ago        177.8 MB
+chetan/foobar                               latest                 c3b2ed108437        5 seconds ago        177.8 MB
+chetan/habitat_export_base                  dadf80f42a2a2028       7921e8c8aac2        16 minutes ago       159.8 MB
+chetan/foobar_base                          dadf80f42a2a2028       7921e8c8aac2        16 minutes ago       159.8 MB
 ```

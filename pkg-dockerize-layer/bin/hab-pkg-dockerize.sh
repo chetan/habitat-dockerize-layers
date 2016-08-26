@@ -87,12 +87,19 @@ find_system_commands() {
 # clean directory with native filesystem permissions which is outside the
 # source code tree.
 build_docker_image() {
-  pkg_ident=$(package_ident_for $1)
+  local ident_file="$(hab pkg path $1)/IDENT"
+  if [[ ! -f "$ident_file" ]]; then
+    hab pkg install $1 # try to install it
+  fi
+
   pkg_name=$(package_name_for $1)
-  pkg_version=$(version_num_for $1)
+  pkg_origin=$(package_origin_for $ident_file)
+  pkg_ident=$(package_ident_for $ident_file)
+  pkg_version=$(version_num_for $ident_file)
 
   BASE_PKGS=$(base_pkgs $@)
   DOCKER_BASE_TAG="${pkg_ident}_base:$(base_pkg_hash $BASE_PKGS)"
+  DOCKER_BASE_TAG_ALT="${pkg_origin}/habitat_export_base:$(base_pkg_hash $BASE_PKGS)"
 
   # create base layer image
   DOCKER_CONTEXT="$($_mktemp_cmd -t -d "${program}-XXXX")"
@@ -109,10 +116,15 @@ build_docker_image() {
   rm -rf "$DOCKER_CONTEXT"
 }
 
+# pkg_origin: core
+package_origin_for() {
+  local ident_file="$1"
+  cat $ident_file | awk 'BEGIN { FS = "/" }; { print $1 }'
+}
+
 # pkg_ident: core/gzip
 package_ident_for() {
-  local pkg="$1"
-  local ident_file="$(hab pkg path $pkg)/IDENT"
+  local ident_file="$1"
   cat $ident_file | awk 'BEGIN { FS = "/" }; { print $1 "/" $2 }'
 }
 
@@ -124,7 +136,6 @@ package_name_for() {
 
 package_exposes() {
   local pkg="$1"
-  # local expose_file=$(find $DOCKER_CONTEXT/rootfs/$HAB_ROOT_PATH/pkgs/$pkg -name EXPOSES)
   local expose_file="$(hab pkg path $pkg)/EXPOSES"
   if [ -f "$expose_file" ]; then
     cat $expose_file
@@ -133,10 +144,7 @@ package_exposes() {
 
 # version_tag: 1.6-20160729193649
 version_num_for() {
-  local pkg="$1"
-  # local ident_file=$(find $DOCKER_CONTEXT/rootfs/$HAB_ROOT_PATH/pkgs/$pkg -name IDENT)
-  # use locally installed IDENT file
-  local ident_file="$(hab pkg path $pkg)/IDENT"
+  local ident_file="$1"
   cat $ident_file | awk 'BEGIN { FS = "/" }; { print $3 "-" $4 }'
 }
 
@@ -162,6 +170,15 @@ docker_base_image() {
     return 0;
   fi
 
+  if [[ -n "$(docker images -q $DOCKER_BASE_TAG_ALT 2> /dev/null)" ]]; then
+    # image already exists
+    echo "base docker image $DOCKER_BASE_TAG_ALT already built; skipping rebuild"
+    # create a tag alias for our package
+    docker tag $DOCKER_BASE_TAG_ALT $DOCKER_BASE_TAG
+    DOCKER_BASE_TAG="$DOCKER_BASE_TAG_ALT"
+    return 0;
+  fi
+
   env PKGS="$BASE_PKGS" NO_MOUNT=1 hab-studio -r $DOCKER_CONTEXT/rootfs -t baseimage new
   echo "$1" > $DOCKER_CONTEXT/rootfs/.hab_pkg
 
@@ -174,6 +191,7 @@ ADD rootfs /
 EOT
 
   docker build --force-rm --no-cache -t $DOCKER_BASE_TAG .
+  docker tag $DOCKER_BASE_TAG $DOCKER_BASE_TAG_ALT
 }
 
 docker_image() {
